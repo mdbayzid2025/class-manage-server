@@ -1,25 +1,46 @@
 import { Model } from 'mongoose';
-import { USER_ROLES, USER_STATUS } from './user.constant';
+import { BLOOD_GROUP, USER_ROLES, USER_STATUS } from './user.constant';
 
-export type IUser = {
+export interface IAddress {
+  area?: string;
+  thana?: string;
+  district?: string;
+}
+
+export interface IEmergencyContact {
+  name?: string;
+  relation?: string;
+  mobile?: string;
+  address?: string;
+}
+
+export interface IUser {
   name: string;
-  role: USER_ROLES;
-  contact: string;
+  idNo?: string;
+  contact?: string;
   email: string;
   password: string;
-  location: string;
-  image?: string;
-  status: USER_STATUS;
-  isVerified: boolean;
+  profession?: string;
+  role: USER_ROLES;
+  address?: IAddress;
+  district?: string;
+  bloodGroup?: BLOOD_GROUP;
+  emergencyContact?: IEmergencyContact;
+  photo?: string;
+  coverImage?: string;
   authentication?: {
     isResetPassword: boolean;
     oneTimeCode: number;
     expireAt: Date;
   };
-};
+  isVerified?: boolean;
+  isDeleted?: boolean;
+  status: USER_STATUS;
+}
 
-export type UserModal = {
-  isExistUserById(id: string): any;
-  isExistUserByEmail(email: string): any;
-  isMatchPassword(password: string, hashPassword: string): boolean;
-} & Model<IUser>;
+// 🔹 Extending static methods
+export interface UserModel extends Model<IUser> {
+  isExistUserById(id: string): Promise<IUser | null>;
+  isExistUserByEmail(email: string): Promise<IUser | null>;
+  isMatchPassword(password: string, hashPassword: string): Promise<boolean>;
+}

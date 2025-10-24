@@ -1,55 +1,87 @@
-import { NextFunction, Request, Response } from 'express';
-import { StatusCodes } from 'http-status-codes';
+import { Request, Response } from 'express';
 import catchAsync from '../../../shared/catchAsync';
-import { getSingleFilePath } from '../../../shared/getFilePath';
 import sendResponse from '../../../shared/sendResponse';
 import { UserService } from './user.service';
+import { StatusCodes } from 'http-status-codes';
 
-const createUser = catchAsync(
-  async (req: Request, res: Response, next: NextFunction) => {
-    const { ...userData } = req.body;
-    const result = await UserService.createUserToDB(userData);
-
-    sendResponse(res, {
-      success: true,
-      statusCode: StatusCodes.OK,
-      message: 'User created successfully',
-      data: result,
-    });
-  }
-);
-
-const getUserProfile = catchAsync(async (req: Request, res: Response) => {
-  const user = req.user;
-  const result = await UserService.getUserProfileFromDB(user);
-
+const createUser = catchAsync(async (req: Request, res: Response) => {
+  const result = await UserService.createUserToDB(req.body);
   sendResponse(res, {
+    statusCode: StatusCodes.CREATED,
     success: true,
-    statusCode: StatusCodes.OK,
-    message: 'Profile data retrieved successfully',
+    message: 'User created successfully',
     data: result,
   });
 });
 
-//update profile
-const updateProfile = catchAsync(
-  async (req: Request, res: Response, next: NextFunction) => {
-    const user = req.user;
-    let image = getSingleFilePath(req.files, 'image');
+const getAllUsers = catchAsync(async (req: Request, res: Response) => {
+  const result = await UserService.getAllUsersFromDB(req.query);
+  sendResponse(res, {
+    statusCode: StatusCodes.OK,
+    success: true,
+    message: 'Users retrieved successfully',
+    pagination: result.meta,
+    data: result.data,
+  });
+});
 
-    const data = {
-      image,
-      ...req.body,
-    };
-    const result = await UserService.updateProfileToDB(user, data);
+const getUserById = catchAsync(async (req: Request, res: Response) => {
+  const result = await UserService.getUserByIdFromDB(req.params.id);
+  sendResponse(res, {
+    statusCode: StatusCodes.OK,
+    success: true,
+    message: 'User retrieved successfully',
+    data: result,
+  });
+});
 
-    sendResponse(res, {
-      success: true,
-      statusCode: StatusCodes.OK,
-      message: 'Profile updated successfully',
-      data: result,
-    });
-  }
-);
+const getProfile = catchAsync(async (req: Request, res: Response) => {
+  const result = await UserService.getProfileFromDB(req.user);
+  sendResponse(res, {
+    statusCode: StatusCodes.OK,
+    success: true,
+    message: 'Profile retrieved successfully',
+    data: result,
+  });
+});
 
-export const UserController = { createUser, getUserProfile, updateProfile };
+const updateUser = catchAsync(async (req: Request, res: Response) => {
+  console.log('called in controller')
+  const result = await UserService.updateUserToDB(req.user, req.body, req.files as Express.Multer.File[],);
+  sendResponse(res, {
+    statusCode: StatusCodes.OK,
+    success: true,
+    message: 'User updated successfully',
+    data: result,
+  });
+});
+
+const updateProfile = catchAsync(async (req: Request, res: Response) => {
+  const result = await UserService.updateProfileToDB(req.body, req.user);
+  sendResponse(res, {
+    statusCode: StatusCodes.OK,
+    success: true,
+    message: 'Profile updated successfully',
+    data: result,
+  });
+});
+
+const deleteUser = catchAsync(async (req: Request, res: Response) => {
+  const result = await UserService.deleteUserFromDB(req.params.id);
+  sendResponse(res, {
+    statusCode: StatusCodes.OK,
+    success: true,
+    message: 'User deleted successfully',
+    data: result,
+  });
+});
+
+export const UserController = {
+  createUser,
+  getAllUsers,
+  getUserById,
+  getProfile,
+  updateUser,
+  updateProfile,
+  deleteUser,
+};

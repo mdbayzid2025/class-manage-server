@@ -1,47 +1,57 @@
+import { Schema, model } from 'mongoose';
 import bcrypt from 'bcrypt';
 import { StatusCodes } from 'http-status-codes';
-import { model, Schema } from 'mongoose';
-import config from '../../../config';
 import ApiError from '../../../errors/ApiError';
-import { IUser, UserModal } from './user.interface';
-import { USER_ROLES, USER_STATUS } from './user.constant';
+import config from '../../../config';
+import { BLOOD_GROUP, USER_ROLES, USER_STATUS } from './user.constant';
+import { IUser, UserModel } from './user.interface';
 
-const userSchema = new Schema<IUser, UserModal>(
+const addressSchema = new Schema(
   {
-    name: {
-      type: String,
-      required: true,
-    },
-    role: {
-      type: String,
-      enum: Object.values(USER_ROLES),
-      required: true,
-    },
+    area: { type: String, trim: true },
+    thana: { type: String, trim: true },
+    district: { type: String, trim: true },
+  },
+  { _id: false }
+);
+
+const emergencyContactSchema = new Schema(
+  {
+    name: { type: String, trim: true },
+    relation: { type: String, trim: true },
+    mobile: { type: String, trim: true },
+    address: { type: String, trim: true },
+  },
+  { _id: false }
+);
+
+const userSchema = new Schema<IUser, UserModel>(
+  {
+    name: { type: String, trim: true, required: true },
+    idNo: { type: String, trim: true },
+    contact: { type: String, trim: true },
     email: {
       type: String,
       required: true,
       unique: true,
       lowercase: true,
+      trim: true,
     },
-    password: {
+    password: { type: String, required: true, minlength: 8, select: false },
+    profession: { type: String, trim: true },
+    role: {
       type: String,
-      required: true,
-      select: 0,
-      minlength: 8,
+      enum: Object.values(USER_ROLES),
+      default: USER_ROLES.USER,
     },
-    image: {
-      type: String,
-      default: 'https://i.ibb.co/z5YHLV9/profile.png',
-    },
-    status: {
-      type: String,
-      enum: Object.values(USER_STATUS),
-      default: USER_STATUS.ACTIVE,
-    },
-    isVerified: {
-      type: Boolean,
-      default: false,
-    },
+    address: { type: addressSchema, default: {} },
+    district: { type: String, trim: true },
+    bloodGroup: { type: String, enum: Object.values(BLOOD_GROUP) },
+    emergencyContact: { type: emergencyContactSchema, default: {} },
+    photo: { type: String, default: '' },
+    coverImage: { type: String, default: '' },
+    isVerified: { type: Boolean, default: true },
+    isDeleted: { type: Boolean, default: false },
     authentication: {
       type: {
         isResetPassword: {
@@ -59,43 +69,56 @@ const userSchema = new Schema<IUser, UserModal>(
       },
       select: 0,
     },
+    status: {
+      type: String,
+      enum: Object.values(USER_STATUS),
+      default: USER_STATUS.ACTIVE,
+    },
   },
-  { timestamps: true }
+  {
+    timestamps: true,
+    versionKey: false,
+  }
 );
 
-//exist user check
-userSchema.statics.isExistUserById = async (id: string) => {
-  const isExist = await User.findById(id);
+/* ===============================
+   🔹 Static Methods
+================================*/
+userSchema.statics.isExistUserById = async function (id: string) {
+  const isExist = await this.findById(id);
   return isExist;
 };
 
-userSchema.statics.isExistUserByEmail = async (email: string) => {
-  const isExist = await User.findOne({ email });
+userSchema.statics.isExistUserByEmail = async function (email: string) {
+  const isExist = await this.findOne({ email });
   return isExist;
 };
 
-//is match password
-userSchema.statics.isMatchPassword = async (
+userSchema.statics.isMatchPassword = async function (
   password: string,
   hashPassword: string
-): Promise<boolean> => {
+): Promise<boolean> {
   return await bcrypt.compare(password, hashPassword);
 };
 
-//check user
+/* ===============================
+   🔹 Pre-save Middleware
+================================*/
 userSchema.pre('save', async function (next) {
-  //check user
-  const isExist = await User.findOne({ email: this.email });
+  const user = this as IUser;
+
+  // Check if email already exists
+  const isExist = await User.findOne({ email: user.email });
   if (isExist) {
-    throw new ApiError(StatusCodes.BAD_REQUEST, 'Email already exist!');
+    throw new ApiError(StatusCodes.BAD_REQUEST, 'Email already exists!');
   }
 
-  //password hash
-  this.password = await bcrypt.hash(
-    this.password,
+  // Hash password before saving
+  user.password = await bcrypt.hash(
+    user.password,
     Number(config.bcrypt_salt_rounds)
   );
   next();
 });
 
-export const User = model<IUser, UserModal>('User', userSchema);
+export const User = model<IUser, UserModel>('User', userSchema);

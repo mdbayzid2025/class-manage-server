@@ -1,33 +1,63 @@
-import express, { NextFunction, Request, Response } from 'express';
+import express, { Request, Response, NextFunction } from 'express';
+import { UserController } from './user.controller';
 import auth from '../../middlewares/auth';
 import validateRequest from '../../middlewares/validateRequest';
-import { UserController } from './user.controller';
 import { UserValidation } from './user.validation';
-import fileUploadHandler from '../../middlewares/fileUploadHandler';
 import { USER_ROLES } from './user.constant';
+import fileUploadHandler from '../../middlewares/fileUploadHandler';
+
 const router = express.Router();
 
-router
-  .route('/profile')
-  .get(auth(USER_ROLES.ADMIN, USER_ROLES.USER), UserController.getUserProfile)
-  .patch(
-    auth(USER_ROLES.SUPER_ADMIN, USER_ROLES.ADMIN, USER_ROLES.USER),
-    fileUploadHandler(),
-    (req: Request, res: Response, next: NextFunction) => {
-      if (req.body.data) {
-        req.body = UserValidation.updateUserZodSchema.parse(
-          JSON.parse(req.body.data)
-        );
-      }
-      return UserController.updateProfile(req, res, next);
-    }
-  );
+// Create user
+router.post(
+  '/',  
+  validateRequest(UserValidation.createUserZodSchema),
+  UserController.createUser
+);
 
-router
-  .route('/')
-  .post(
-    validateRequest(UserValidation.createUserZodSchema),
-    UserController.createUser
-  );
+// Get all users
+router.get(
+  '/',
+  auth(USER_ROLES.SUPER_ADMIN, USER_ROLES.ADMIN, USER_ROLES.USER),
+  UserController.getAllUsers
+);
+
+// Get profile of logged-in user
+router.get(
+  '/profile',
+  auth(USER_ROLES.USER, USER_ROLES.ADMIN, USER_ROLES.SUPER_ADMIN,),
+  UserController.getProfile
+);
+
+// Get single user by ID
+router.get(
+  '/:id',
+  auth(USER_ROLES.SUPER_ADMIN, USER_ROLES.ADMIN, USER_ROLES.USER),
+  UserController.getUserById
+);
+
+// Update user by admin
+router.patch(
+  '/update',
+  auth(USER_ROLES.SUPER_ADMIN, USER_ROLES.ADMIN, USER_ROLES.USER),
+  fileUploadHandler(),
+  validateRequest(UserValidation.updateUserZodSchema),
+  UserController.updateUser
+);
+
+// Update own profile
+router.patch(
+  '/profile/update',
+  auth(USER_ROLES.USER, USER_ROLES.ADMIN, USER_ROLES.SUPER_ADMIN),
+  validateRequest(UserValidation.updateUserZodSchema),
+  UserController.updateProfile
+);
+
+// Delete user
+router.delete(
+  '/:id',
+  auth(USER_ROLES.SUPER_ADMIN),
+  UserController.deleteUser
+);
 
 export const UserRoutes = router;

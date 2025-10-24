@@ -1,81 +1,104 @@
-import { StatusCodes } from 'http-status-codes';
-import { JwtPayload } from 'jsonwebtoken';
-import ApiError from '../../../errors/ApiError';
-import { emailHelper } from '../../../helpers/emailHelper';
-import { emailTemplate } from '../../../shared/emailTemplate';
-import unlinkFile from '../../../shared/unlinkFile';
-import generateOTP from '../../../util/generateOTP';
+
 import { IUser } from './user.interface';
 import { User } from './user.model';
-import { USER_ROLES } from './user.constant';
+import ApiError from '../../../errors/ApiError';
+import { StatusCodes } from 'http-status-codes';
+import QueryBuilder from '../../builder/QueryBuilder';
+import { JwtPayload } from 'jsonwebtoken';
 
-const createUserToDB = async (payload: Partial<IUser>): Promise<IUser> => {
-  //set role
-  payload.role = USER_ROLES.USER;
-  const createUser = await User.create(payload);
-  if (!createUser) {
-    throw new ApiError(StatusCodes.BAD_REQUEST, 'Failed to create user');
+// ✅ Create user
+const createUserToDB = async (payload: IUser): Promise<IUser> => {
+  const existingUser = await User.isExistUserByEmail(payload.email);
+  if (existingUser) {
+    throw new ApiError(StatusCodes.BAD_REQUEST, 'User with this email already exists!');
   }
 
-  //send email
-  const otp = generateOTP();
-  const values = {
-    name: createUser.name,
-    otp: otp,
-    email: createUser.email!,
-  };
-  const createAccountTemplate = emailTemplate.createAccount(values);
-  emailHelper.sendEmail(createAccountTemplate);
-
-  //save to DB
-  const authentication = {
-    oneTimeCode: otp,
-    expireAt: new Date(Date.now() + 3 * 60000),
-  };
-  await User.findOneAndUpdate(
-    { _id: createUser._id },
-    { $set: { authentication } }
-  );
-
-  return createUser;
+  const result = await User.create(payload);
+  return result;
 };
 
-const getUserProfileFromDB = async (
-  user: JwtPayload
-): Promise<Partial<IUser>> => {
-  const { id } = user;
-  const isExistUser = await User.isExistUserById(id);
-  if (!isExistUser) {
-    throw new ApiError(StatusCodes.BAD_REQUEST, "User doesn't exist!");
-  }
+// ✅ Get all users
+const getAllUsersFromDB = async (query: Record<string, unknown>) => {
+  const usersQueryBuilder = new QueryBuilder(User.find(), query)
+    .search(['name', 'idNo', 'email', 'bloodGroup', 'contact'])
+    .filter()
+    .sort()
+    .fields()
+    .paginate();
 
-  return isExistUser;
+  const users = await usersQueryBuilder.modelQuery;
+  const meta = await usersQueryBuilder.getPaginationInfo();
+
+  return { data: users, meta };
 };
 
-const updateProfileToDB = async (
-  user: JwtPayload,
-  payload: Partial<IUser>
-): Promise<Partial<IUser | null>> => {
-  const { id } = user;
-  const isExistUser = await User.isExistUserById(id);
-  if (!isExistUser) {
-    throw new ApiError(StatusCodes.BAD_REQUEST, "User doesn't exist!");
+// ✅ Get single user by ID
+const getUserByIdFromDB = async (id: string) => {
+  const user = await User.isExistUserById(id);
+  if (!user) {
+    throw new ApiError(StatusCodes.NOT_FOUND, 'User not found!');
   }
 
-  //unlink file here
-  if (payload.image) {
-    unlinkFile(isExistUser.image);
+  const result = await User.findById(id).select('-password');
+  return result;
+};
+
+// ✅ Get profile
+const getProfileFromDB = async (user: any) => {
+  const result = await User.findOne({ _id: user.id }).select('-password');
+  return result;
+};
+
+// ✅ Update user info
+const updateUserToDB = async (user: JwtPayload, payload: IUser, files:any) => {
+  const photo = files?.photo?.[0];
+  if (photo) {
+    payload.photo = `/uploads/image/${photo.filename}`;
+  }
+  
+  const existingUser = await User.isExistUserById(user.id);
+  if (!existingUser) {
+    throw new ApiError(StatusCodes.NOT_FOUND, 'User not found!');
   }
 
-  const updateDoc = await User.findOneAndUpdate({ _id: id }, payload, {
+  const result = await User.findByIdAndUpdate(user.id, payload, {
     new: true,
-  });
+    runValidators: true,
+  }).select('-password');
+  return result;
+};
 
-  return updateDoc;
+// ✅ Update profile
+const updateProfileToDB = async (payload: Partial<IUser>, user: any) => {
+  const existingUser = await User.isExistUserById(user.id);
+  if (!existingUser) {
+    throw new ApiError(StatusCodes.NOT_FOUND, 'Profile not found!');
+  }
+
+  const result = await User.findByIdAndUpdate(user.id, payload, {
+    new: true,
+    runValidators: true,
+  }).select('-password');
+  return result;
+};
+
+// ✅ Delete user
+const deleteUserFromDB = async (id: string) => {
+  const existingUser = await User.isExistUserById(id);
+  if (!existingUser) {
+    throw new ApiError(StatusCodes.NOT_FOUND, 'User not found!');
+  }
+
+  const result = await User.findByIdAndDelete(id);
+  return result;
 };
 
 export const UserService = {
   createUserToDB,
-  getUserProfileFromDB,
+  getAllUsersFromDB,
+  getUserByIdFromDB,
+  getProfileFromDB,
+  updateUserToDB,
   updateProfileToDB,
+  deleteUserFromDB,
 };
