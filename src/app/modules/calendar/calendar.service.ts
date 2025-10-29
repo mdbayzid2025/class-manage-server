@@ -28,15 +28,18 @@ class CalendarService {
 
   async getScheduledEventsById(id: string) {
     try {
+
+      
       const result = await Calendar.findById(id)
         .populate({
           path: 'item',
           populate: {
             path: 'subject',
-            select: 'name code teacher',
+            select: 'name subjectCode teacher',
           },
         })
         .lean();
+        
       return result;
     } catch (error: any) {
       throw new ApiError(StatusCodes.INTERNAL_SERVER_ERROR, error.message);

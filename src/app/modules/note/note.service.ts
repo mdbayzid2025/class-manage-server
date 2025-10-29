@@ -15,13 +15,13 @@ class NoteService {
 
     if (files?.images?.length > 0) {
       payload.images = files?.images?.map(
-        (file: any) => `/uploads/image/${file.filename}`,
+        (file: any) => `/image/${file.filename}`,
       );
     }
 
-    if (files?.documents?.length > 0) {
-      payload.documents = files?.documents?.map(
-        (file: any) => `/uploads/document/${file.filename}`,
+    if (files?.document?.length > 0) {
+      payload.document = files?.document?.map(
+        (file: any) => `/document/${file.filename}`,
       );
     }
 

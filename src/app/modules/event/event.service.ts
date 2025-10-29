@@ -12,7 +12,7 @@ const createEventToDB = async (payload: TEvent) => {
   const event = await Event.create(payload);
 
   // Attach event to subject
-  const subject = await Subject.findByIdAndUpdate(
+   await Subject.findByIdAndUpdate(
     payload.subject,
     { $push: { events: event._id } },
     { new: true },
@@ -28,6 +28,7 @@ const createEventToDB = async (payload: TEvent) => {
   };
   await calendarService.createCalendar(calendarData);
 
+  
   // Send notification
 //   await NotificationService.createNotification({
 //     title: 'New Event Scheduled',

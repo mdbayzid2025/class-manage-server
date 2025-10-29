@@ -6,7 +6,7 @@ const noteSchema = new Schema<INote, NoteModel>(
     title: { type: String, required: true },
     description: { type: String },
     images: [{ type: String }],
-    documents: [{ type: String }],
+    document: [{ type: String }],
     tags: [{ type: String }],
     priority: { type: String },
     subject: { type: Schema.Types.ObjectId, ref: 'Subject' },

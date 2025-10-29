@@ -5,7 +5,7 @@ export interface INote extends Document {
   title: string;
   description?: string;
   images?: string[];
-  documents?: string[];
+  document?: string[];
   tags?: string[];
   priority?: NOTE_PRIORITY | string;
   subject?: Types.ObjectId;
