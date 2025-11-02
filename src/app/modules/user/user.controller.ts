@@ -56,8 +56,8 @@ const updateUser = catchAsync(async (req: Request, res: Response) => {
   });
 });
 
-const updateProfile = catchAsync(async (req: Request, res: Response) => {
-  const result = await UserService.updateProfileToDB(req.body, req.user);
+const updateProfile = catchAsync(async (req: Request, res: Response) => {  
+  const result = await UserService.updateProfileToDB(req.body, req.user, req.files as Express.Multer.File[]);
   sendResponse(res, {
     statusCode: StatusCodes.OK,
     success: true,

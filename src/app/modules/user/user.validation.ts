@@ -24,7 +24,7 @@ export const createUserZodSchema = z.object({
       mobile: z.string().optional(),
       address: z.string().optional(),
     }).optional(),
-    profileImage: z.string().optional(),
+    photo: z.string().optional(),
     coverImage: z.string().optional(),
     verified: z.boolean().optional(),
     isDeleted: z.boolean().optional(),

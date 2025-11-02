@@ -53,7 +53,7 @@ const getProfileFromDB = async (user: any) => {
 const updateUserToDB = async (user: JwtPayload, payload: IUser, files:any) => {
   const photo = files?.photo?.[0];
   if (photo) {
-    payload.photo = `/uploads/image/${photo.filename}`;
+    payload.photo = `/image/${photo.filename}`;
   }
   
   const existingUser = await User.isExistUserById(user.id);
@@ -69,7 +69,12 @@ const updateUserToDB = async (user: JwtPayload, payload: IUser, files:any) => {
 };
 
 // ✅ Update profile
-const updateProfileToDB = async (payload: Partial<IUser>, user: any) => {
+const updateProfileToDB = async (payload: Partial<IUser>, user: any, files:any) => {
+    const photo = files?.photo?.[0];
+  if (photo) {
+    payload.photo = `/image/${photo.filename}`;
+  }
+  
   const existingUser = await User.isExistUserById(user.id);
   if (!existingUser) {
     throw new ApiError(StatusCodes.NOT_FOUND, 'Profile not found!');

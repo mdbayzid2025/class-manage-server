@@ -29,6 +29,16 @@ router.get(
   UserController.getProfile
 );
 
+// Get profile of logged-in user
+router.patch(
+  '/profile',
+   
+  auth(USER_ROLES.USER, USER_ROLES.ADMIN, USER_ROLES.SUPER_ADMIN,),
+  fileUploadHandler(),
+  validateRequest(UserValidation.updateUserZodSchema),
+  UserController.updateProfile
+);
+
 // Get single user by ID
 router.get(
   '/:id',
@@ -45,13 +55,13 @@ router.patch(
   UserController.updateUser
 );
 
-// Update own profile
-router.patch(
-  '/profile/update',
-  auth(USER_ROLES.USER, USER_ROLES.ADMIN, USER_ROLES.SUPER_ADMIN),
-  validateRequest(UserValidation.updateUserZodSchema),
-  UserController.updateProfile
-);
+// // Update own profile
+// router.patch(
+//   '/profile/update',
+//   auth(USER_ROLES.USER, USER_ROLES.ADMIN, USER_ROLES.SUPER_ADMIN),
+//   validateRequest(UserValidation.updateUserZodSchema),
+//   UserController.updateProfile
+// );
 
 // Delete user
 router.delete(
