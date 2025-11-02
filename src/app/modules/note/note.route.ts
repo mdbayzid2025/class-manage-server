@@ -35,7 +35,7 @@ router.get(
 // Update note
 router.patch(
   '/:id',
-  auth(USER_ROLES.SUPER_ADMIN, USER_ROLES.ADMIN),
+  auth(USER_ROLES.SUPER_ADMIN, USER_ROLES.ADMIN, USER_ROLES.USER),
   fileUploadHandler(),
   validateRequest(NoteValidation.updateNoteZodSchema),
   noteController.updateNote
@@ -44,7 +44,7 @@ router.patch(
 // Delete note
 router.delete(
   '/:id',
-  auth(USER_ROLES.SUPER_ADMIN, USER_ROLES.ADMIN),
+  auth(USER_ROLES.SUPER_ADMIN, USER_ROLES.ADMIN, USER_ROLES.USER,),
   noteController.deleteNote
 );
 
